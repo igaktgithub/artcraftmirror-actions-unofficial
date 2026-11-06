@@ -1,0 +1,30 @@
+name: Mirror texturecraft -> GitLab
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # a cada 30 min
+  workflow_dispatch:
+
+concurrency:
+  group: mirror-texturecraft
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    env:
+      SOURCE_URL: https://github.com/storytold/texturecraft.git
+      GITLAB_PATH: igglab/texturecraft-mirror
+    steps:
+      - name: Clonar origem
+        run: git clone --bare "$SOURCE_URL" src.git
+
+      - name: Enviar para o GitLab (branches e tags)
+        working-directory: src.git
+        env:
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+        run: |
+          git remote add gitlab "https://oauth2:${GITLAB_TOKEN}@gitlab.com/${GITLAB_PATH}.git"
+          git push --prune gitlab \
+            '+refs/heads/*:refs/heads/*' \
+            '+refs/tags/*:refs/tags/*'
